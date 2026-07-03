@@ -374,6 +374,41 @@
             color: #1a3359;
         }
 
+        .governor-badge {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .photo-upload-area {
+            background: #f8faff;
+            border: 2px dashed #dae2ec;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .photo-upload-area:hover {
+            border-color: #1a3359;
+            background: #f0f4f9;
+        }
+
+        .current-photo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .current-photo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #f6b83d;
+        }
+
         @media (max-width: 760px) {
             .grid-2col { grid-template-columns: 1fr; }
             .main-content { padding: 18px; }
@@ -424,26 +459,35 @@
             </div>
         </div>
 
-        <!-- CHAIRMAN / GOVERNOR PANEL -->
-        <div class="main-content" v-else-if="currentUser.role === 'chairman' || currentUser.role === 'governor'">
+        <!-- CHAIRMAN PANEL -->
+        <div class="main-content" v-else-if="currentUser.role === 'chairman'">
             <div class="card">
                 <div class="flex-between">
-                    <div class="card-title">
-                        <span v-if="currentUser.role === 'chairman'">👑 Панель Председателя</span>
-                        <span v-else>⚜️ Панель Правителя</span>
-                    </div>
-                    <div class="badge" v-if="currentUser.role === 'chairman'">Высшие полномочия</div>
-                    <div class="badge" v-else>Полномочия Правителя</div>
+                    <div class="card-title">👑 Панель Председателя</div>
+                    <div class="badge">Высшие полномочия</div>
                 </div>
                 <p style="color:#2a405b;">
-                    <strong>{{ currentUser.fullName }}</strong> — 
-                    <span v-if="currentUser.role === 'chairman'">управление сотрудниками и общими документами.</span>
-                    <span v-else>управление общими документами.</span>
+                    <strong>{{ currentUser.fullName }}</strong> — управление сотрудниками, общими документами и своим профилем.
                 </p>
             </div>
 
-            <!-- Add Employee (only for chairman) -->
-            <div class="card" v-if="currentUser.role === 'chairman'">
+            <!-- Chairman Photo Upload -->
+            <div class="card">
+                <div class="card-title">📸 Моё фото</div>
+                <div class="photo-upload-area" @click="triggerChairmanPhotoUpload">
+                    <i class="fas fa-camera" style="font-size:2rem;color:#7a8a9e;"></i>
+                    <p style="color:#7a8a9e;margin-top:8px;">Нажмите, чтобы загрузить фото</p>
+                    <input type="file" ref="chairmanPhotoInput" accept="image/*" @change="onChairmanPhotoSelected" class="hidden-file">
+                </div>
+                <div class="current-photo" v-if="currentUser.photoUrl">
+                    <img :src="currentUser.photoUrl" alt="Фото председателя">
+                    <button @click="removeChairmanPhoto" class="small-btn danger">🗑 Удалить фото</button>
+                </div>
+                <div v-else style="color:#7a8a9e;margin-top:12px;">Фото не загружено</div>
+            </div>
+
+            <!-- Add Employee -->
+            <div class="card">
                 <div class="card-title">➕ Назначить сотрудника</div>
                 <div class="grid-2col">
                     <div>
@@ -499,8 +543,8 @@
                 <button @click="addUser" style="width:100%; margin-top:4px;">✅ Назначить</button>
             </div>
 
-            <!-- All Employees (only for chairman) -->
-            <div class="card" v-if="currentUser.role === 'chairman'">
+            <!-- All Employees -->
+            <div class="card">
                 <div class="card-title">📋 Все сотрудники</div>
                 <div v-if="loading" class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
                 <div v-else-if="allUsersList.length === 0" class="empty-state">Пока нет назначенных сотрудников</div>
@@ -512,7 +556,7 @@
                             <div>
                                 <strong>{{ user.fullName }}</strong><br>
                                 <span class="badge">{{ user.roleTitle || getRoleName(user.role) }}</span>
-                                <span class="role-badge" v-if="user.role === 'governor'">⚜️ Правитель</span>
+                                <span class="role-badge governor-badge" v-if="user.role === 'governor'">⚜️ Правитель</span>
                                 <div style="font-size:0.7rem; color:#3e5f7e; margin-top:2px;">Логин: {{ user.login }}</div>
                             </div>
                         </div>
@@ -524,7 +568,7 @@
                 </div>
             </div>
 
-            <!-- Common Documents - доступно и Председателю, и Правителю -->
+            <!-- Common Documents -->
             <div class="card">
                 <div class="card-title">📚 Общие документы (видны всем)</div>
                 <div style="background:#f5f9ff; padding:18px; border-radius:24px; margin-bottom:18px;">
@@ -569,7 +613,65 @@
             </div>
         </div>
 
-        <!-- STAFF PANEL (non-chairman, non-governor) -->
+        <!-- GOVERNOR PANEL (только просмотр) -->
+        <div class="main-content" v-else-if="currentUser.role === 'governor'">
+            <div class="card">
+                <div class="flex-between">
+                    <div class="card-title">⚜️ Панель Правителя</div>
+                    <div class="badge">Полномочия Правителя</div>
+                </div>
+                <p style="color:#2a405b;">
+                    <strong>{{ currentUser.fullName }}</strong> — просмотр документов и своего профиля.
+                </p>
+            </div>
+
+            <!-- Governor Photo -->
+            <div class="card">
+                <div class="card-title">📸 Моё фото</div>
+                <div class="current-photo" v-if="currentUser.photoUrl">
+                    <img :src="currentUser.photoUrl" alt="Фото правителя">
+                </div>
+                <div v-else style="color:#7a8a9e;padding:20px;text-align:center;background:#f8faff;border-radius:20px;">
+                    <i class="fas fa-user-circle" style="font-size:3rem;color:#dae2ec;"></i>
+                    <p style="margin-top:8px;">Фото не загружено. Обратитесь к Председателю.</p>
+                </div>
+            </div>
+
+            <!-- Governor Personal Document -->
+            <div class="card">
+                <div class="card-title">📄 Мой персональный документ</div>
+                <div class="document-view">
+                    <div v-if="currentUser.documentText" style="background:white; padding:14px; border-radius:18px; margin:10px 0;">{{ currentUser.documentText }}</div>
+                    <div v-if="currentUser.documentImageData">
+                        <img :src="currentUser.documentImageData" class="document-img" @click="openModal(currentUser.documentImageData)">
+                        <div class="badge" style="margin-top:4px;">📸 Фото документа (нажмите)</div>
+                    </div>
+                    <div v-if="!currentUser.documentText && !currentUser.documentImageData" style="color:#b1624b;">⚠️ Персональный документ ещё не загружен.</div>
+                </div>
+            </div>
+
+            <!-- Common Documents (только просмотр) -->
+            <div class="card">
+                <div class="card-title">📚 Общие документы (от Председателя)</div>
+                <div v-if="loadingDocs" class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
+                <div v-else-if="commonDocuments.length === 0" class="empty-state">Пока нет опубликованных документов</div>
+                <div v-else class="documents-grid">
+                    <div v-for="doc in commonDocuments" :key="doc.id" class="document-card">
+                        <h4>{{ doc.title || 'Документ' }}</h4>
+                        <div v-if="doc.text" style="margin:10px 0;">{{ doc.text }}</div>
+                        <div v-if="doc.image">
+                            <img :src="doc.image" class="document-img" @click="openModal(doc.image)">
+                        </div>
+                        <div style="font-size:0.7rem; color:#7a8a9e;">
+                            Добавлен: {{ doc.date }}
+                            <span v-if="doc.author">• {{ doc.author }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAFF PANEL -->
         <div class="main-content" v-else>
             <div class="card">
                 <div class="card-title">📄 Ваш персональный документ</div>
@@ -729,10 +831,8 @@
         methods: {
             // ===== INITIALIZE CHAIRMAN =====
             initializeChairman() {
-                // Проверяем, есть ли председатель в базе
                 db.ref('users').orderByChild('role').equalTo('chairman').once('value', (sn) => {
                     if (!sn.exists()) {
-                        // Создаем председателя
                         const chairmanData = {
                             login: '2347',
                             password: '2203',
@@ -819,6 +919,49 @@
                 this.currentUser = null;
                 this.loginForm = { login: '', password: '' };
                 this.showToast('👋 Выход выполнен');
+            },
+
+            // ===== CHAIRMAN PHOTO =====
+            triggerChairmanPhotoUpload() {
+                this.$refs.chairmanPhotoInput.click();
+            },
+
+            onChairmanPhotoSelected(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const photoData = ev.target.result;
+                        // Обновляем в Firebase
+                        const userRef = db.ref('users').orderByChild('login').equalTo(this.currentUser.login);
+                        userRef.once('value', (sn) => {
+                            sn.forEach(child => {
+                                db.ref('users/' + child.key).update({
+                                    photoUrl: photoData
+                                }).then(() => {
+                                    this.currentUser.photoUrl = photoData;
+                                    this.showToast('✅ Фото обновлено!');
+                                });
+                            });
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+
+            removeChairmanPhoto() {
+                if (!confirm('Удалить фото?')) return;
+                const userRef = db.ref('users').orderByChild('login').equalTo(this.currentUser.login);
+                userRef.once('value', (sn) => {
+                    sn.forEach(child => {
+                        db.ref('users/' + child.key).update({
+                            photoUrl: ''
+                        }).then(() => {
+                            this.currentUser.photoUrl = '';
+                            this.showToast('🗑️ Фото удалено');
+                        });
+                    });
+                });
             },
 
             // ===== ADD USER =====
