@@ -409,6 +409,14 @@
             border: 3px solid #f6b83d;
         }
 
+        .login-hint {
+            margin-top: 12px;
+            font-size: 0.7rem;
+            color: #7a8a9e;
+            text-align: center;
+            opacity: 0.5;
+        }
+
         @media (max-width: 760px) {
             .grid-2col { grid-template-columns: 1fr; }
             .main-content { padding: 18px; }
@@ -453,9 +461,6 @@
                     <input type="password" v-model="loginForm.password" placeholder="Введите пароль" @keyup.enter="doLogin">
                 </div>
                 <button @click="doLogin" style="width:100%;">Войти</button>
-                <div style="margin-top:12px;font-size:0.75rem;color:#7a8a9e;text-align:center;">
-                    <i class="fas fa-info-circle"></i> Председатель: 2347 / 2203
-                </div>
             </div>
         </div>
 
@@ -613,7 +618,7 @@
             </div>
         </div>
 
-        <!-- GOVERNOR PANEL (только просмотр) -->
+        <!-- GOVERNOR PANEL -->
         <div class="main-content" v-else-if="currentUser.role === 'governor'">
             <div class="card">
                 <div class="flex-between">
@@ -932,7 +937,6 @@
                     const reader = new FileReader();
                     reader.onload = (ev) => {
                         const photoData = ev.target.result;
-                        // Обновляем в Firebase
                         const userRef = db.ref('users').orderByChild('login').equalTo(this.currentUser.login);
                         userRef.once('value', (sn) => {
                             sn.forEach(child => {
